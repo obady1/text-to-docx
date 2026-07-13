@@ -1,6 +1,6 @@
 """الحزمة الأساسية: نماذج البيانات وقراءة الملفات وبناء المستند."""
 
-from core.models import BookSettings, Lesson, ConversionStats, PageSize, TextDirection
+from core.model import BookSettings, Lesson, ConversionStats, PageSize, TextDirection
 from core.file_reader import FileReader
 from core.text_processor import TextProcessor
 from core.docx_builder import DocxBuilder

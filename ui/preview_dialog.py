@@ -2,7 +2,7 @@
 
 import customtkinter as ctk
 
-from core.models import BookSettings, PAGE_DIMENSIONS_CM
+from core.model import BookSettings, PAGE_DIMENSIONS_CM
 from utils.i18n import get_i18n
 
 _i18n = get_i18n()

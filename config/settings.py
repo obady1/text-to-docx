@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from core.models import BookSettings
+from core.model import BookSettings
 
 # مجلد الإعدادات الافتراضي
 CONFIG_DIR = Path.home() / ".txt_to_docx"

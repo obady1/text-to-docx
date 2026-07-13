@@ -9,7 +9,7 @@ from typing import Optional
 import customtkinter as ctk
 
 from config.settings import SettingsManager
-from core.models import BookSettings, ARABIC_FONTS, LATIN_FONTS
+from core.model import BookSettings, ARABIC_FONTS, LATIN_FONTS
 from core.file_reader import FileReader
 from core.text_processor import TextProcessor
 from core.docx_builder import DocxBuilder

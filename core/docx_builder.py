@@ -12,7 +12,7 @@ from docx.oxml.ns import qn, nsdecls
 from docx.oxml import parse_xml
 from docx.shared import Cm, Pt, RGBColor, Emu
 
-from core.models import (
+from core.model import (
     BookSettings,
     Lesson,
     ConversionStats,

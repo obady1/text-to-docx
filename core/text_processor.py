@@ -3,7 +3,7 @@
 import re
 from typing import Optional
 
-from core.models import Lesson
+from core.model import Lesson
 from utils.logger import get_logger
 
 logger = get_logger(__name__)

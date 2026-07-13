@@ -7,7 +7,7 @@ from typing import Optional
 
 import chardet
 
-from core.models import Lesson
+from core.model import Lesson
 from utils.logger import get_logger
 
 logger = get_logger(__name__)

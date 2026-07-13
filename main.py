@@ -82,7 +82,7 @@ def main() -> None:
 
     # ── 4. تحميل الإعدادات ──
     from config.settings import SettingsManager
-    from core.models import BookSettings
+    from core.model import BookSettings
 
     settings_mgr = SettingsManager(config_dir)
     settings = settings_mgr.load()

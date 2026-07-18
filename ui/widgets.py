@@ -1,4 +1,4 @@
-"""عناصر واجهة مخصصة: منتقي المجلدات، سجل الأحداث، شريط التقدم."""
+"""Custom functional UI widget component elements toolkit: Selectors, Loggers, Status bars."""
 
 import customtkinter as ctk
 from pathlib import Path
@@ -10,7 +10,7 @@ _i18n = get_i18n()
 
 
 class FolderSelector(ctk.CTkFrame):
-    """عنصر مخصص لاختيار مجلد مع دعم السحب والإفلات."""
+    """Custom folder exploration select panel supporting file path drag-and-drop operations mechanics."""
 
     def __init__(
         self,
@@ -24,12 +24,12 @@ class FolderSelector(ctk.CTkFrame):
         self._on_select = on_select
         self._path = ""
 
-        # التسمية
+        # Title Headings labels layouts fields configurations elements
         if label_text:
             self._label = ctk.CTkLabel(self, text=label_text, anchor="w")
             self._label.pack(fill="x", pady=(0, 4))
 
-        # إطار حقل المسار وزر الاستعراض
+        # Horizontal alignment row elements box setup wrappers mapping lines
         self._entry_frame = ctk.CTkFrame(self, fg_color="transparent")
         self._entry_frame.pack(fill="x")
 
@@ -48,11 +48,11 @@ class FolderSelector(ctk.CTkFrame):
         )
         self._btn.pack(side="right")
 
-        # ربط أحداث السحب والإفلات
+        # Initialize cross-framework DnD bindings hooks logic lines safely
         self._setup_drag_drop()
 
     def _setup_drag_drop(self) -> None:
-        """إعداد السحب والإفلات إذا كانت المكتبة متاحة."""
+        """Binds internal field routines context elements directly over system file drop hooks modules."""
         try:
             from tkinterdnd2 import DND_FILES, TkinterDnD
 
@@ -62,20 +62,20 @@ class FolderSelector(ctk.CTkFrame):
             pass
 
     def _on_drop(self, event) -> None:
-        """معالجة حدث الإفلات."""
-        path = event.data.strip("{}")  # إزالة الأقواس على بعض الأنظمة
+        """Handles structural file system drop operational callback context parameters safely."""
+        path = event.data.strip("{}")  # Strips bracket wrappers artifacts typical inside specific OS frames
         if Path(path).is_dir():
             self.set_path(path)
 
     def _browse(self) -> None:
-        """فتح نافذة اختيار المجلد."""
+        """Launches explorer paths prompt interfaces windows selectors fields safely."""
         from tkinter import filedialog
         path = filedialog.askdirectory(title=_i18n.t("browse"))
         if path:
             self.set_path(path)
 
     def set_path(self, path: str) -> None:
-        """تعيين المسار وتحديث الحقل."""
+        """Overwrites structural internal monitoring metrics parameters values updating view fields text inputs."""
         self._path = path
         self._entry.delete(0, "end")
         self._entry.insert(0, path)
@@ -83,32 +83,32 @@ class FolderSelector(ctk.CTkFrame):
             self._on_select(path)
 
     def get_path(self) -> str:
-        """الحصول على المسار الحالي."""
+        """Retrieves verified ongoing system selection folder paths strings safely."""
         return self._path
 
     def clear(self) -> None:
-        """مسح الحقل."""
+        """Flushes system entries fields inputs parameters data structural modifications text wrappers."""
         self._path = ""
         self._entry.delete(0, "end")
 
 
 class LogWidget(ctk.CTkTextbox):
-    """عنصر سجل الأحداث مع ألوان مختلفة للرسائل."""
+    """Categorized logging terminal element displaying contextual activities status traces."""
 
     def __init__(self, master, **kwargs) -> None:
         super().__init__(master, **kwargs)
         self.configure(state="disabled", wrap="word")
 
     def log(self, message: str, tag: str = "info") -> None:
-        """إضافة رسالة للسجل.
+        """Appends localized textual statement records inside execution terminal blocks fields tracking areas.
 
         Args:
-            message: نص الرسالة.
-            tag: نوع الرسالة (info, success, error, warning).
+            message: Raw messaging context text string statement.
+            tag: Metric tracing level classification profiles flags (info, success, error, warning).
         """
         self.configure(state="normal")
 
-        # رمز ملون حسب النوع
+        # Contextual icon map properties configurations entries logs traces symbols
         icons = {
             "info": "ℹ️",
             "success": "✅",
@@ -124,7 +124,7 @@ class LogWidget(ctk.CTkTextbox):
 
 
 class ProgressPanel(ctk.CTkFrame):
-    """لوحة التقدم مع شريط التقدم والوقت المتبقي."""
+    """Visualization status dashboard tracks displaying task completion fractions indicators bars and timers metrics."""
 
     def __init__(self, master, **kwargs) -> None:
         super().__init__(master, **kwargs)
@@ -143,12 +143,12 @@ class ProgressPanel(ctk.CTkFrame):
     def update_progress(
         self, current: int, total: int, filename: str = ""
     ) -> None:
-        """تحديث شريط التقدم والمعلومات.
+        """Advances active bar positions parameters scales recalculating estimated operational termination times.
 
         Args:
-            current: عدد الملفات المنجزة.
-            total: العدد الإجمالي.
-            filename: اسم الملف الحالي.
+            current: Aggregated values quantity scale files mapped successfully.
+            total: Quantitative total scale parameters context target boundaries limitations benchmarks.
+            filename: Active ongoing filename targets labels traces items strings.
         """
         import time
 
@@ -159,7 +159,7 @@ class ProgressPanel(ctk.CTkFrame):
             fraction = current / total
             self._progress_bar.set(fraction)
 
-            # حساب الوقت المتبقي
+            # Compute ongoing temporal velocity estimations properties metrics safely
             elapsed = time.time() - self._start_time
             if current > 0:
                 avg_per_file = elapsed / current
@@ -178,14 +178,14 @@ class ProgressPanel(ctk.CTkFrame):
             self._info_label.configure(text=info)
 
     def reset(self) -> None:
-        """إعادة تعيين شريط التقدم."""
+        """Resets visual properties scales indexes to standard starting parameters baseline settings values."""
         self._progress_bar.set(0)
         self._info_label.configure(text="—")
         self._start_time = None
 
     @staticmethod
     def _format_time(seconds: float) -> str:
-        """تنسيق الثواني إلى نص مقروء."""
+        """Converts raw timestamps double metrics values fields entries inside easy-to-read format text blocks strings."""
         if seconds < 60:
             return f"{seconds:.0f}s"
         minutes = int(seconds // 60)

@@ -1,12 +1,11 @@
-"""نظام السجلات الموحد للمشروع."""
+"""Unified project logging framework."""
 
 import logging
 import sys
 from pathlib import Path
 from typing import Optional
 
-
-# مستوى السجل الافتراضي
+# Default logging level for development/production debugging
 DEFAULT_LEVEL = logging.DEBUG
 
 
@@ -15,36 +14,36 @@ def setup_logger(
     level: int = DEFAULT_LEVEL,
     log_file: Optional[str] = None,
 ) -> logging.Logger:
-    """إعداد وإنشاء مسجل جديد مع معالجات ملائمة.
+    """Configures and returns a new logger equipped with optimal standard handlers.
 
     Args:
-        name: اسم المسجل.
-        level: مستوى السجل (logging.DEBUG, logging.INFO, ...).
-        log_file: مسار ملف السجل الاختياري.
+        name: Name of the logger.
+        level: Logging severity threshold (e.g., logging.DEBUG, logging.INFO).
+        log_file: Optional path to save logs to a physical file.
 
     Returns:
-        كائن المسجل المُعد.
+        The configured logging.Logger object.
     """
     logger = logging.getLogger(name)
     logger.setLevel(level)
 
-    # تجنب تكرار المعالجات
+    # Avoid adding duplicate handlers if the logger is already initialized
     if logger.handlers:
         return logger
 
-    # تنسيق الرسائل
+    # Log message structural format
     formatter = logging.Formatter(
         fmt="%(asctime)s │ %(levelname)-8s │ %(name)-25s │ %(message)s",
         datefmt="%H:%M:%S",
     )
 
-    # معالج الكونسول
+    # Console Handler (Stdout output stream)
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(level)
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
-    # معالج الملف (اختياري)
+    # File Handler (Optional persistent storage)
     if log_file:
         log_path = Path(log_file)
         log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -57,17 +56,19 @@ def setup_logger(
 
 
 def get_logger(name: str) -> logging.Logger:
-    """الحصول على مسجل بوحدة معينة.
+    """Retrieves a contextual child logger for a specific application module.
 
-        name: اسم الوحدة (يُستخدم كاسم المسجل الفرعي).
+    Args:
+        name: Name of the module/sub-component.
 
     Returns:
-        كائن المسجل.
+        The scoped child Logger instance.
     """
-    # التأكد من أن المسجل الرئيسي مُعد
+    # Ensure the root package logger is configured first
     root_logger = logging.getLogger("txt_to_docx")
     if not root_logger.handlers:
         setup_logger()
 
+    # Apply proper naming hierarchy convention
     child_name = f"txt_to_docx.{name}" if not name.startswith("txt_to_docx.") else name
     return logging.getLogger(child_name)

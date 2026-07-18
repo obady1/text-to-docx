@@ -1,4 +1,4 @@
-"""النافذة الرئيسية لتطبيق محوّل النصوص إلى Word."""
+"""Main application window for the text-to-Word converter application."""
 
 import os
 import platform
@@ -22,14 +22,15 @@ from ui.settings_dialog import SettingsDialog
 from ui.about_dialog import AboutDialog
 from ui.preview_dialog import PreviewDialog
 
+# Initialize logger and internationalization helper
 logger = get_logger(__name__)
 _i18n = get_i18n()
 
 
 class MainApplication(ctk.CTk):
-    """النافذة الرئيسية للتطبيق.
+    """Main application window.
 
-    تجمع بين جميع عناصر الواجهة وتنسق بينها وبين منطق الأعمال.
+    Combines all UI elements and coordinates them with the underlying business logic.
     """
 
     def __init__(self, settings: BookSettings, config_dir: Path) -> None:
@@ -42,25 +43,25 @@ class MainApplication(ctk.CTk):
         self._worker: Optional[ConversionWorker] = None
         self._file_count = 0
 
-        # إعداد النافذة
+        # Initialize and configure the window components
         self._setup_window()
         self._setup_menu()
         self._build_ui()
         self._apply_theme()
 
-        logger.info("تم تشغيل التطبيق بنجاح")
+        logger.info("Application launched successfully")
 
     # ══════════════════════════════════════════════
-    #  إعداد النافذة
+    #  Window Configuration
     # ══════════════════════════════════════════════
 
     def _setup_window(self) -> None:
-        """إعداد خصائص النافذة الأساسية."""
+        """Sets up the core window properties including title, size, and icons."""
         self.title(_i18n.t("app_title"))
         self.geometry("780x680")
         self.minsize(650, 550)
 
-        # تعيين الأيقونة
+        # Set window icon if available
         icon_path = self._config_dir / "icon.ico"
         if icon_path.exists():
             try:
@@ -68,17 +69,17 @@ class MainApplication(ctk.CTk):
             except Exception:
                 pass
 
-        # إعداد السمة
+        # Configure appearance mode and theme colors
         ctk.set_appearance_mode(self._theme.current)
         ctk.set_default_color_theme("blue")
 
     def _setup_menu(self) -> None:
-        """إعداد قائمة النافذة."""
-        # ملاحظة: CustomTkinter لا يدعم القوائم الأصلية مباشرة
-        # نستخدم tkinter.Menu كحل بديل
+        """Initializes the top application menu bar using standard tkinter fallback."""
+        # Note: CustomTkinter does not natively support menu bars directly,
+        # so we utilize tkinter.Menu as a fallback solution.
         menubar = self._get_native_menu()
 
-        # قائمة ملف
+        # File Menu configuration
         file_menu = self._add_menu(menubar, _i18n.t("menu_file"))
         file_menu.add_command(
             label=_i18n.t("menu_preview"),
@@ -90,7 +91,7 @@ class MainApplication(ctk.CTk):
             command=self._on_close,
         )
 
-        # قائمة إعدادات
+        # Settings Menu configuration
         settings_menu = self._add_menu(menubar, _i18n.t("menu_settings"))
         settings_menu.add_command(
             label=_i18n.t("menu_settings"),
@@ -98,7 +99,7 @@ class MainApplication(ctk.CTk):
         )
         settings_menu.add_separator()
 
-        # قائمة فرعية للسمة
+        # Visual Theme Submenu
         theme_menu = self._add_submenu(settings_menu, _i18n.t("menu_theme"))
         theme_menu.add_command(
             label=_i18n.t("menu_dark"),
@@ -111,7 +112,7 @@ class MainApplication(ctk.CTk):
 
         settings_menu.add_separator()
 
-        # قائمة فرعية للغة
+        # Interface Language Submenu
         lang_menu = self._add_submenu(settings_menu, _i18n.t("menu_language"))
         lang_menu.add_command(
             label="العربية",
@@ -122,7 +123,7 @@ class MainApplication(ctk.CTk):
             command=lambda: self._change_language("en"),
         )
 
-        # قائمة مساعدة
+        # Help Menu configuration
         help_menu = self._add_menu(menubar, _i18n.t("menu_help"))
         help_menu.add_command(
             label=_i18n.t("menu_about"),
@@ -132,42 +133,42 @@ class MainApplication(ctk.CTk):
         self.configure(menu=menubar)
 
     def _get_native_menu(self):
-        """الحصول على قائمة أصلية حسب النظام."""
+        """Retrieves an OS-native menu instance."""
         from tkinter import Menu
         return Menu(self)
 
     def _add_menu(self, parent, label: str):
-        """إضافة قائمة رئيسية."""
+        """Adds a primary menu item to the bar."""
         menu = self._create_submenu(parent)
         parent.add_cascade(label=label, menu=menu)
         return menu
 
     def _add_submenu(self, parent, label: str):
-        """إضافة قائمة فرعية."""
+        """Adds a cascaded secondary submenu item."""
         menu = self._create_submenu(parent)
         parent.add_cascade(label=label, menu=menu)
         return menu
 
     def _create_submenu(self, parent):
-        """إنشاء قائمة فرعية."""
+        """Creates a generic dropdown menu helper instance."""
         from tkinter import Menu
         return Menu(parent, tearoff=0)
 
     # ══════════════════════════════════════════════
-    #  بناء الواجهة
+    #  UI Layout and Construction
     # ══════════════════════════════════════════════
 
     def _build_ui(self) -> None:
-        """بناء جميع عناصر الواجهة."""
-        # الحاوية الرئيسية مع تمرير
+        """Constructs and structures all graphical interface components."""
+        # Main layout wrapper frame
         main_frame = ctk.CTkFrame(self, fg_color="transparent")
         main_frame.pack(fill="both", expand=True, padx=15, pady=10)
 
-        # ── القسم العلوي: المجلدات والمعلومات ──
+        # ── Upper Section: Directory Selectors & Data Metadata ──
         top_frame = ctk.CTkFrame(main_frame)
         top_frame.pack(fill="x", pady=(0, 10))
 
-        # مجلد الإدخال
+        # Input Path folder selector widget
         self._input_selector = FolderSelector(
             top_frame,
             label_text=_i18n.t("input_folder"),
@@ -175,7 +176,7 @@ class MainApplication(ctk.CTk):
         )
         self._input_selector.pack(fill="x", padx=10, pady=(10, 5))
 
-        # مجلد الإخراج واسم الملف
+        # Output folder row configuration
         output_row = ctk.CTkFrame(top_frame, fg_color="transparent")
         output_row.pack(fill="x", padx=10, pady=(5, 10))
 
@@ -186,7 +187,7 @@ class MainApplication(ctk.CTk):
         )
         self._output_selector.pack(side="left", fill="x", expand=True, padx=(0, 8))
 
-        # حقل اسم الملف
+        # File naming fields container
         name_frame = ctk.CTkFrame(output_row, fg_color="transparent")
         name_frame.pack(side="right")
 
@@ -198,7 +199,7 @@ class MainApplication(ctk.CTk):
         self._filename_entry = ctk.CTkEntry(name_frame, width=200, placeholder_text="book.docx")
         self._filename_entry.pack(fill="x")
 
-        # اسم الكتاب والمؤلف
+        # Book Title and Author identification entries
         info_row = ctk.CTkFrame(top_frame, fg_color="transparent")
         info_row.pack(fill="x", padx=10, pady=(0, 10))
 
@@ -224,11 +225,11 @@ class MainApplication(ctk.CTk):
         self._author_entry = ctk.CTkEntry(author_frame, placeholder_text=_i18n.t("author_name"))
         self._author_entry.pack(fill="x")
 
-        # ── شريط التقدم ──
+        # ── Progress Visualization Panel ──
         self._progress_panel = ProgressPanel(main_frame)
         self._progress_panel.pack(fill="x", pady=(0, 10))
 
-        # ── السجل ──
+        # ── System Activity Log Widget ──
         log_label = ctk.CTkLabel(
             main_frame, text=_i18n.t("log"), anchor="w", font=ctk.CTkFont(weight="bold")
         )
@@ -237,7 +238,7 @@ class MainApplication(ctk.CTk):
         self._log_widget = LogWidget(main_frame, height=150)
         self._log_widget.pack(fill="both", expand=True, pady=(0, 10))
 
-        # ── الأزرار ──
+        # ── Bottom Control Panel Buttons ──
         btn_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
         btn_frame.pack(fill="x")
 
@@ -271,15 +272,15 @@ class MainApplication(ctk.CTk):
         )
         self._start_btn.pack(side="right")
 
-        # استعادة المسارات الأخيرة
+        # Restore configurations from previous sessions
         self._restore_last_paths()
 
     # ══════════════════════════════════════════════
-    #  معالجات الأحداث
+    #  Event Handlers
     # ══════════════════════════════════════════════
 
     def _on_input_selected(self, path: str) -> None:
-        """عند اختيار مجلد الإدخال."""
+        """Fires automatically when the user defines an input directory path."""
         try:
             reader = FileReader()
             files = reader.get_txt_files(path)
@@ -287,7 +288,8 @@ class MainApplication(ctk.CTk):
             self._log_widget.log(
                 _i18n.t("files_found", count=self._file_count), "success"
             )
-            # اقتراح اسم الملف من اسم المجلد
+            
+            # Suggest localized filenames based on selected folders
             folder_name = Path(path).name
             if not self._filename_entry.get():
                 self._filename_entry.delete(0, "end")
@@ -299,11 +301,11 @@ class MainApplication(ctk.CTk):
             self._log_widget.log(str(e), "error")
 
     def _on_output_selected(self, path: str) -> None:
-        """عند اختيار مجلد الإخراج."""
+        """Fires automatically when the destination directory has been defined."""
         self._log_widget.log(f"📁 {path}", "info")
 
     def _restore_last_paths(self) -> None:
-        """استعادة المسارات الأخيرة من الإعدادات."""
+        """Loads and auto-fills fields using persistent localized metadata properties."""
         s = self._settings
         if s.last_input_folder and Path(s.last_input_folder).is_dir():
             self._input_selector.set_path(s.last_input_folder)
@@ -317,12 +319,12 @@ class MainApplication(ctk.CTk):
             self._author_entry.insert(0, s.author_name)
 
     # ══════════════════════════════════════════════
-    #  عملية التحويل
+    #  Core Conversion Orchestration Engine
     # ══════════════════════════════════════════════
 
     def _start_conversion(self) -> None:
-        """بدء عملية التحويل."""
-        # التحقق من المدخلات
+        """Begins processing input file text into structured DOCX outputs."""
+        # Validation checks on input paths
         input_path = self._input_selector.get_path()
         if not input_path or not Path(input_path).is_dir():
             self._log_widget.log(_i18n.t("select_folder_first"), "warning")
@@ -341,27 +343,27 @@ class MainApplication(ctk.CTk):
 
         output_path = str(Path(output_folder) / filename)
 
-        # تحديث إعدادات الكتاب من الحقول
+        # Map active configuration updates directly from active text fields
         self._settings.book_title = self._book_entry.get().strip()
         self._settings.author_name = self._author_entry.get().strip()
         self._settings.last_input_folder = input_path
         self._settings.last_output_folder = output_folder
 
-        # حفظ الإعدادات
+        # Save persistent modifications safely
         try:
             self._settings_manager.save(self._settings)
         except Exception as e:
-            logger.warning("تعذّر حفظ الإعدادات: %s", e)
+            logger.warning("Failed to save runtime configurations: %s", e)
 
-        # تحديث حالة الأزرار
+        # Toggle interface interactive button states
         self._start_btn.configure(state="disabled")
         self._stop_btn.configure(state="normal")
         self._open_btn.configure(state="disabled")
         self._progress_panel.reset()
 
-        self._log_widget.log("🚀 بدء عملية التحويل...", "info")
+        self._log_widget.log("🚀 Initializing conversion sequence...", "info")
 
-        # بدء خيط العمل
+        # Deploy a specialized multi-threaded background processing context
         self._worker = ConversionWorker(
             target=self._conversion_task,
             on_progress=self._on_progress,
@@ -371,14 +373,14 @@ class MainApplication(ctk.CTk):
         self._worker.start(input_path, output_path)
 
     def _conversion_task(self, input_path: str, output_path: str) -> dict:
-        """المهمة الرئيسية للتحويل (تُنفذ في خيط منفصل)."""
+        """Executes the computationally intensive data conversion routine (Background Thread)."""
         reader = FileReader()
         processor = TextProcessor(
             first_line_indent_cm=self._settings.first_line_indent_cm
         )
 
-        # قراءة الدروس
-        self._worker._safe_log("📖 جارٍ قراءة الملفات...")
+        # Read localized materials
+        self._worker._safe_log("📖 Reading source files from disk...")
         lessons = reader.read_lessons(input_path)
 
         if not lessons:
@@ -388,12 +390,12 @@ class MainApplication(ctk.CTk):
                 "output_path": "",
             }
 
-        # معالجة النصوص
-        self._worker._safe_log("🧹 جارٍ تنظيف ومعالجة النصوص...")
+        # Text cleansing execution
+        self._worker._safe_log("🧹 Executing text cleanup and processing optimizations...")
         lessons = processor.process_lessons(lessons)
 
-        # بناء المستند
-        self._worker._safe_log("📝 جارٍ بناء مستند Word...")
+        # Build structural components
+        self._worker._safe_log("📝 Generating Word document nodes and tables...")
         builder = DocxBuilder(
             settings=self._settings,
             progress_callback=self._worker._safe_progress,
@@ -417,11 +419,11 @@ class MainApplication(ctk.CTk):
         if stats.failed_files > 0 and stats.processed_files == 0:
             return {
                 "success": False,
-                "error": f"فشلت جميع الملفات ({stats.failed_files})",
+                "error": f"All source files failed mapping pipeline ({stats.failed_files})",
                 "output_path": "",
             }
 
-        # حفظ المستند
+        # Save compiled results safely
         builder.save(output_path)
 
         return {
@@ -437,17 +439,17 @@ class MainApplication(ctk.CTk):
         }
 
     def _on_progress(self, current: int, total: int, name: str) -> None:
-        """تحديث التقدم من خيط العمل."""
-        # يجب تحديث الواجهة من الخيط الرئيسي
+        """Receives incremental milestones reported from active worker contexts."""
+        # Main GUI interface status updates are continually dispatched over safe ticks
         self.after(0, self._progress_panel.update_progress, current, total, name)
 
     def _on_complete(self, result) -> None:
-        """عند انتهاء عملية التحويل."""
-        # العودة إلى الخيط الرئيسي لتحديث الواجهة
+        """Callback context triggering automatically upon routine termination."""
+        # Return safely back within the bounds of the primary thread safely
         self.after(0, self._handle_result, result)
 
     def _handle_result(self, result) -> None:
-        """معالجة نتيجة التحويل وتحديث الواجهة."""
+        """Processes finalized workflow outputs and changes interactive UI elements."""
         self._start_btn.configure(state="normal")
         self._stop_btn.configure(state="disabled")
 
@@ -459,14 +461,14 @@ class MainApplication(ctk.CTk):
             if result.stats:
                 s = result.stats
                 self._log_widget.log(
-                    f"📊 {s.get('processed', 0)} ملف تم بنجاح | "
-                    f"{s.get('failed', 0)} فشل | "
-                    f"{s.get('elapsed', 0):.1f} ثانية",
+                    f"📊 {s.get('processed', 0)} files successfully processed | "
+                    f"{s.get('failed', 0)} failed entries | "
+                    f"{s.get('elapsed', 0):.1f} total elapsed seconds",
                     "info",
                 )
                 if s.get("failed_names"):
                     for name in s["failed_names"]:
-                        self._log_widget.log(f"  ⚠️ {name}", "warning")
+                        self._log_widget.log(f"  ⚠️ Failure at item: {name}", "warning")
 
             self._last_output_path = result.output_path
             self._open_btn.configure(state="normal")
@@ -478,12 +480,12 @@ class MainApplication(ctk.CTk):
         self._worker = None
 
     def _stop_conversion(self) -> None:
-        """طلب إيقاف عملية التحويل."""
+        """Instructs running tasks to gracefully abort execution loops safely."""
         if self._worker and self._worker.is_running:
             self._worker.stop()
 
     def _open_output_file(self) -> None:
-        """فتح الملف الناتج بالبرنامج الافتراضي."""
+        """Launches localized destination document directly using system handlers."""
         path = getattr(self, "_last_output_path", "")
         if not path or not Path(path).exists():
             return
@@ -496,16 +498,16 @@ class MainApplication(ctk.CTk):
                 subprocess.run(["open", path], check=True)
             else:  # Linux
                 subprocess.run(["xdg-open", path], check=True)
-            self._log_widget.log(f"📂 تم فتح: {path}", "info")
+            self._log_widget.log(f"📂 External program opened: {path}", "info")
         except Exception as e:
-            self._log_widget.log(f"تعذّر فتح الملف: {e}", "error")
+            self._log_widget.log(f"Unable to launch document context: {e}", "error")
 
     # ══════════════════════════════════════════════
-    #  النوافذ المنبثقة
+    #  Dialogue Windows Management
     # ══════════════════════════════════════════════
 
     def _show_settings(self) -> None:
-        """فتح نافذة الإعدادات."""
+        """Deploys an independent dialog portal focusing settings panels."""
         dialog = SettingsDialog(
             self,
             settings=self._settings,
@@ -513,15 +515,15 @@ class MainApplication(ctk.CTk):
         )
 
     def _on_settings_saved(self, settings: BookSettings) -> None:
-        """عند حفظ الإعدادات من نافذة الإعدادات."""
+        """Callback handler processing finalized configuration dialog savings."""
         self._settings = settings
         try:
             self._settings_manager.save(settings)
             self._log_widget.log(_i18n.t("settings_saved"), "success")
         except Exception as e:
-            self._log_widget.log(f"خطأ في الحفظ: {e}", "error")
+            self._log_widget.log(f"Storage access fault encountered: {e}", "error")
 
-        # تحديث الحقول
+        # Reflect changes instantly inside text inputs
         if settings.book_title:
             self._book_entry.delete(0, "end")
             self._book_entry.insert(0, settings.book_title)
@@ -530,57 +532,57 @@ class MainApplication(ctk.CTk):
             self._author_entry.insert(0, settings.author_name)
 
     def _show_about(self) -> None:
-        """فتح نافذة حول البرنامج."""
+        """Instantiates descriptive application info summaries modals."""
         AboutDialog(self)
 
     def _show_preview(self) -> None:
-        """فتح نافذة المعاينة."""
+        """Opens up compiled system status layout components summaries modals."""
         self._sync_settings_from_ui()
         PreviewDialog(self, self._settings, self._file_count)
 
     # ══════════════════════════════════════════════
-    #  السمة واللغة
+    #  Theme and Language Controls
     # ══════════════════════════════════════════════
 
     def _change_theme(self, theme: str) -> None:
-        """تغيير سمة الواجهة."""
+        """Adjusts global parameters styling aesthetics properties updates."""
         self._theme.set_theme(theme)
         self._apply_theme()
         self._settings.theme = theme
         self._save_settings_silent()
 
     def _apply_theme(self) -> None:
-        """تطبيق السمة الحالية على الواجهة."""
+        """Applies active appearance modes modifications right through framework trees."""
         ctk.set_appearance_mode(self._theme.current)
 
     def _change_language(self, lang: str) -> None:
-        """تغيير لغة الواجهة (يتطلب إعادة تشغيل)."""
+        """Changes systemic visualization language strings (Requires execution reboot)."""
         if lang != self._settings.language:
             self._settings.language = lang
             self._save_settings_silent()
             self._log_widget.log(
-                "🔄 تم تغيير اللغة. يُرجى إعادة تشغيل البرنامج.",
+                "🔄 Localization language redefined. Please restart application to take effect.",
                 "warning",
             )
 
     def _sync_settings_from_ui(self) -> None:
-        """مزامنة إعدادات الكتاب من حقول الواجهة."""
+        """Synchronizes underlying config tracking objects with ongoing field changes."""
         self._settings.book_title = self._book_entry.get().strip()
         self._settings.author_name = self._author_entry.get().strip()
 
     def _save_settings_silent(self) -> None:
-        """حفظ الإعدادات بصمت (بدون رسالة)."""
+        """Quietly flushes property profiles straight over runtime database logs safely."""
         try:
             self._settings_manager.save(self._settings)
         except Exception as e:
-            logger.warning("تعذّر حفظ الإعدادات: %s", e)
+            logger.warning("Failed to save properties profile silently: %s", e)
 
     # ══════════════════════════════════════════════
-    #  أحداث النافذة
+    #  Window Life-cycle Interceptions
     # ══════════════════════════════════════════════
 
     def _on_close(self) -> None:
-        """معالجة إغلاق النافذة."""
+        """Intercepts typical programmatic window destruction routines safely."""
         if self._worker and self._worker.is_running:
             self._worker.stop()
             self.after(500, self._on_close)
@@ -590,7 +592,7 @@ class MainApplication(ctk.CTk):
         self.destroy()
 
     def destroy(self) -> None:
-        """تدمير النافذة بأمان."""
+        """Performs reliable terminal cleaning closures onto backend trees safely."""
         try:
             super().destroy()
         except Exception:

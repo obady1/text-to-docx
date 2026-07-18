@@ -1,4 +1,4 @@
-"""بناء مستند Word الاحترافي من الدروس المعالجة."""
+"""Professional Word document builder for processed lessons."""
 
 import re
 from datetime import datetime
@@ -24,10 +24,10 @@ logger = get_logger(__name__)
 
 
 class DocxBuilder:
-    """باني مستندات Word الاحترافية.
+    """Professional Word document builder.
 
-    يحوّل قائمة من الدروس إلى ملف DOCX منسق وجاهز للطباعة
-    مع غلاف وفهرس وترقيم صفحات وهيدر وفوتر.
+    Converts a list of lessons into a formatted, print-ready DOCX file
+    complete with a cover page, table of contents, page numbering, header, and footer.
     """
 
     def __init__(
@@ -36,12 +36,12 @@ class DocxBuilder:
         progress_callback: Optional[Callable[[int, int, str], None]] = None,
         stop_check: Optional[Callable[[], bool]] = None,
     ) -> None:
-        """تهيئة الباني.
+        """Initializes the builder.
 
         Args:
-            settings: إعدادات الكتاب.
-            progress_callback: دالة تُستدعى بـ (الحالي, الإجمالي, اسم_الملف).
-            stop_check: دالة تُرجع True إذا طلب المستخدم الإيقاف.
+            settings: Book settings configuration.
+            progress_callback: Callback function invoked with (current, total, filename).
+            stop_check: Callback function returning True if the user requests a stop.
         """
         self.settings = settings
         self._progress_callback = progress_callback
@@ -50,17 +50,17 @@ class DocxBuilder:
         self._is_rtl = settings.text_direction == "RTL"
 
     # ══════════════════════════════════════════════
-    #  واجهة عامة
+    #  Public Interface
     # ══════════════════════════════════════════════
 
     def build(self, lessons: list[Lesson]) -> ConversionStats:
-        """بناء المستند الكامل وحفظه.
+        """Builds and saves the full document.
 
         Args:
-            lessons: قائمة الدروس المراد إضافتها.
+            lessons: List of lessons to be included.
 
         Returns:
-            إحصائيات عملية التحويل.
+            Statistics regarding the conversion process.
         """
         stats = ConversionStats(total_files=len(lessons))
         start_time = datetime.now()
@@ -71,54 +71,54 @@ class DocxBuilder:
             self._build_content(lessons, stats)
             self._finalize_document()
         except Exception as e:
-            logger.error("خطأ أثناء البناء: %s", e, exc_info=True)
+            logger.error("Error during document building: %s", e, exc_info=True)
             stats.failed_files = stats.total_files - stats.processed_files
             raise
 
         stats.elapsed_seconds = (datetime.now() - start_time).total_seconds()
         logger.info(
-            "تم بناء المستند: %d درس في %.1f ثانية",
+            "Document built successfully: %d lessons in %.1f seconds",
             stats.processed_files,
             stats.elapsed_seconds,
         )
         return stats
 
     def save(self, output_path: str) -> None:
-        """حفظ المستند في المسار المحدد.
+        """Saves the document to the specified destination path.
 
         Args:
-            output_path: مسار ملف الإخراج (يجب أن ينتهي بـ .docx).
+            output_path: Output file path (must end with .docx).
         """
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         self.doc.save(str(output_path))
-        logger.info("تم الحفظ في: %s", output_path)
+        logger.info("Document saved to: %s", output_path)
 
     # ══════════════════════════════════════════════
-    #  إعداد المستند
+    #  Document Configuration
     # ══════════════════════════════════════════════
 
     def _setup_document(self) -> None:
-        """إعداد إعدادات المستند الأساسية والقسم الأول."""
+        """Sets up the baseline configurations and the initial document section."""
         s = self.settings
         section = self.doc.sections[0]
 
-        # حجم الورق
+        # Paper layout setup
         dims = PAGE_DIMENSIONS_CM.get(s.page_size, PAGE_DIMENSIONS_CM["A4"])
         section.page_width = Cm(dims[0])
         section.page_height = Cm(dims[1])
 
-        # الهوامش
+        # Page boundaries (margins)
         section.top_margin = Cm(s.margin_top_cm)
         section.bottom_margin = Cm(s.margin_bottom_cm)
         section.left_margin = Cm(s.margin_left_cm)
         section.right_margin = Cm(s.margin_right_cm)
 
-        # اتجاه النص الافتراضي للقسم
+        # Base orientation flow setup
         if self._is_rtl:
             self._set_section_rtl(section)
 
-        # إزالة الهيدر والفوتر الافتراضيين من القسم الأول
+        # Clear default header and footer layouts for the initial section
         section.header.is_linked_to_previous = False
         section.footer.is_linked_to_previous = False
         for p in section.header.paragraphs:
@@ -127,7 +127,7 @@ class DocxBuilder:
             p.clear()
 
     def _set_section_rtl(self, section) -> None:
-        """تفعيل اتجاه من اليمين لليسار للقسم."""
+        """Enables right-to-left layout configuration for the given section."""
         sect_pr = section._sectPr
         bidi_elem = parse_xml(f'<w:bidi {nsdecls("w")} w:val="1"/>')
         existing = sect_pr.find(qn("w:bidi"))
@@ -136,11 +136,11 @@ class DocxBuilder:
         sect_pr.append(bidi_elem)
 
     # ══════════════════════════════════════════════
-    #  الصفحات التمهيدية (غلاف، حقوق نشر)
+    #  Preliminary Pages (Cover & Copyright)
     # ══════════════════════════════════════════════
 
     def _build_preliminary_pages(self, lessons: list[Lesson]) -> None:
-        """بناء الغلاف وصفحة حقوق النشر في القسم الأول."""
+        """Generates the cover and copyright layouts inside the initial section."""
         s = self.settings
 
         if s.add_cover:
@@ -149,25 +149,25 @@ class DocxBuilder:
         if s.add_copyright:
             self._add_copyright_page()
 
-        # إنشاء قسم جديد للمحتوى الرئيسي
+        # Isolate body text contents into a distinct structural section
         self._add_content_section()
 
     def _add_cover_page(self) -> None:
-        """إضافة صفحة الغلاف."""
+        """Appends the standard cover page layout."""
         s = self.settings
 
-        # مسافات عمودية لدفع المحتوى نحو المنتصف
+        # Vertical spacing to shift contents downwards toward the center
         for _ in range(6):
             self.doc.add_paragraph()
 
-        # خط فاصل زخرفي
+        # Decorative break line
         separator = self.doc.add_paragraph()
         separator.alignment = WD_ALIGN_PARAGRAPH.CENTER
         run = separator.add_run("─" * 40)
         run.font.size = Pt(14)
         run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
 
-        # عنوان الكتاب
+        # Document main title
         title_para = self.doc.add_paragraph()
         title_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
         title_para.space_after = Pt(12)
@@ -179,17 +179,17 @@ class DocxBuilder:
         run.font.color.rgb = RGBColor(0x1A, 0x23, 0x7E)
         self._apply_rtl_to_run(run)
 
-        # خط فاصل
+        # Decorative break line
         separator2 = self.doc.add_paragraph()
         separator2.alignment = WD_ALIGN_PARAGRAPH.CENTER
         run2 = separator2.add_run("─" * 40)
         run2.font.size = Pt(14)
         run2.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
 
-        # مسافة
+        # Spacer
         self.doc.add_paragraph()
 
-        # اسم المؤلف
+        # Author name layout
         author_para = self.doc.add_paragraph()
         author_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
         self._apply_rtl_to_paragraph(author_para)
@@ -199,18 +199,18 @@ class DocxBuilder:
         run_a.font.color.rgb = RGBColor(0x44, 0x44, 0x44)
         self._apply_rtl_to_run(run_a)
 
-        # السنة
+        # Calendar year indicator
         year_para = self.doc.add_paragraph()
         year_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
         run_y = year_para.add_run(str(datetime.now().year))
         run_y.font.size = Pt(16)
         run_y.font.color.rgb = RGBColor(0x88, 0x88, 0x88)
 
-        # فاصل صفحة
+        # Page split marker
         self.doc.add_page_break()
 
     def _add_copyright_page(self) -> None:
-        """إضافة صفحة حقوق النشر."""
+        """Appends the legal copyright declaration layout."""
         s = self.settings
         copyright_text = s.copyright_text.format(
             year=datetime.now().year,
@@ -233,11 +233,11 @@ class DocxBuilder:
         self.doc.add_page_break()
 
     # ══════════════════════════════════════════════
-    #  قسم المحتوى الرئيسي
+    #  Main Content Section Setup
     # ══════════════════════════════════════════════
 
     def _add_content_section(self) -> None:
-        """إضافة قسم جديد للمحتوى مع هيدر وفوتر وترقيم."""
+        """Appends a fresh isolated section for body elements containing distinct headers and running details."""
         s = self.settings
 
         new_section = self.doc.add_section()
@@ -252,34 +252,34 @@ class DocxBuilder:
         if self._is_rtl:
             self._set_section_rtl(new_section)
 
-        # بدء ترقيم الصفحات من 1 في هذا القسم
+        # Re-index progression numbers starting explicitly from page 1
         new_section.start_type = 2  # WD_SECTION.NEW_PAGE
 
-        # إعداد ترقيم الصفحات
+        # Configure automatic page numbers
         if s.add_page_numbers:
             self._setup_page_numbers(new_section)
 
-        # إعداد الهيدر
+        # Configure dynamic heading running strings
         if s.add_header and s.header_text:
             self._setup_header(new_section, s.header_text)
 
-        # إعداد الفوتر
+        # Configure persistent running footers
         if s.add_footer and s.footer_text:
             self._setup_footer(new_section, s.footer_text)
 
     def _setup_page_numbers(self, section) -> None:
-        """إضافة ترقيم الصفحات في الفوتر."""
+        """Injects automatic native page numbering tracking components into the footer field."""
         footer = section.footer
         footer.is_linked_to_previous = False
 
-        # التأكد من وجود فقرة واحدة
+        # Verify a baseline workspace paragraph structure exists
         if not footer.paragraphs:
             footer.add_paragraph()
         para = footer.paragraphs[0]
         para.clear()
         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-        # بناء حقل ترقيم الصفحات باستخدام XML
+        # Assemble structural XML fields mapping directly to standard page number fields
         run1 = para.add_run()
         fld_begin = parse_xml(f'<w:fldChar {nsdecls("w")} w:fldCharType="begin"/>')
         run1._r.append(fld_begin)
@@ -295,7 +295,7 @@ class DocxBuilder:
         run3._r.append(fld_end)
 
     def _setup_header(self, section, text: str) -> None:
-        """إعداد الهيدر بالنص المحدد."""
+        """Configures the top header text parameters."""
         header = section.header
         header.is_linked_to_previous = False
         if not header.paragraphs:
@@ -311,7 +311,7 @@ class DocxBuilder:
         run.font.color.rgb = RGBColor(0x99, 0x99, 0x99)
         self._apply_rtl_to_run(run)
 
-        # إضافة خط فاصل أسفل الهيدر
+        # Append a structural boundary accent directly beneath the running text
         pPr = para._p.get_or_add_pPr()
         pBdr = parse_xml(
             f'<w:pBdr {nsdecls("w")}>'
@@ -324,19 +324,15 @@ class DocxBuilder:
         pPr.append(pBdr)
 
     def _setup_footer(self, section, text: str) -> None:
-        """إعداد الفوتر بالنص المحدد (يُضاف بجانب ترقيم الصفحات)."""
-        # يتم دمج النص مع ترقيم الصفحات في الفوتر
+        """Configures the bottom running footer strings alongside automatic page tags."""
         footer = section.footer
         para = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
 
-        # إضافة النص قبل حقل الترقيم
+        # If a field tracking element sequence exists, reassemble cleanly
         if para.runs:
-            # إذا كان هناك ترقيم صفحات بالفعل، نضيف النص قبله
-            text_run = para.runs[0]
-            # نقوم بإعادة بناء الفوتر بالكامل
             pass
 
-        # إعادة بناء الفوتر: نص + ترقيم
+        # Clear and reconstruct footer layout cleanly: textual elements + sequential digits
         para.clear()
         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
         self._apply_rtl_to_paragraph(para)
@@ -348,7 +344,7 @@ class DocxBuilder:
             tr.font.color.rgb = RGBColor(0x99, 0x99, 0x99)
             self._apply_rtl_to_run(tr)
 
-        # حقل الترقيم
+        # Setup sequence indexing elements via system XML tokens
         r1 = para.add_run()
         r1._r.append(parse_xml(f'<w:fldChar {nsdecls("w")} w:fldCharType="begin"/>'))
         r2 = para.add_run()
@@ -357,28 +353,28 @@ class DocxBuilder:
         r3._r.append(parse_xml(f'<w:fldChar {nsdecls("w")} w:fldCharType="end"/>'))
 
     # ══════════════════════════════════════════════
-    #  بناء المحتوى (فهرس، مقدمة، دروس، خاتمة)
+    #  Content Sequencing (TOC, Intro, Main, Outro)
     # ══════════════════════════════════════════════
 
     def _build_content(self, lessons: list[Lesson], stats: ConversionStats) -> None:
-        """بناء المحتوى الرئيسي: فهرس + مقدمة + دروس + خاتمة."""
+        """Sequences core textual structural properties cleanly."""
         s = self.settings
 
-        # جدول المحتويات
+        # Table of contents index page layout
         if s.add_toc and lessons:
             self._add_table_of_contents()
             self.doc.add_page_break()
 
-        # المقدمة
+        # Introduction block layout
         if s.intro_text.strip():
             self._add_intro_outro(s.intro_text, is_intro=True)
 
-        # الدروس
+        # Core file content rendering loop
         for i, lesson in enumerate(lessons):
-            # التحقق من إيقاف العملية
+            # Intercept iteration if cancellation state is active
             if self._stop_check and self._stop_check():
                 stats.cancelled = True
-                logger.info("تم إيقاف العملية بواسطة المستخدم")
+                logger.info("Operational execution terminated by caller statement.")
                 return
 
             try:
@@ -387,21 +383,21 @@ class DocxBuilder:
             except Exception as e:
                 stats.failed_files += 1
                 stats.failed_filenames.append(lesson.title)
-                logger.error("فشل في إضافة الدرس '%s': %s", lesson.title, e)
+                logger.error("Failed to append structural segment elements '%s': %s", lesson.title, e)
 
-            # تحديث التقدم
+            # Fire tracking state updates outward
             if self._progress_callback:
                 self._progress_callback(i + 1, len(lessons), lesson.title)
 
-        # الخاتمة
+        # Outro block layout
         if s.conclusion_text.strip():
             self._add_intro_outro(s.conclusion_text, is_intro=False)
 
     def _add_table_of_contents(self) -> None:
-        """إضافة جدول محتويات (TOC) كحقل Word."""
+        """Appends a word-native structural Table of Contents tracking component field."""
         s = self.settings
 
-        # عنوان "جدول المحتويات"
+        # Index page section label layout
         heading = self.doc.add_heading(level=1)
         heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
         self._apply_rtl_to_paragraph(heading)
@@ -411,7 +407,7 @@ class DocxBuilder:
         run.font.color.rgb = RGBColor(0x1A, 0x23, 0x7E)
         self._apply_rtl_to_run(run)
 
-        # حقل TOC
+        # XML field elements mapped to standard index tracking properties
         para = self.doc.add_paragraph()
         self._apply_rtl_to_paragraph(para)
 
@@ -429,7 +425,7 @@ class DocxBuilder:
         r3 = para.add_run()
         r3._r.append(parse_xml(f'<w:fldChar {nsdecls("w")} w:fldCharType="separate"/>'))
 
-        # نص مؤقت يظهر حتى يتم تحديث الحقل في Word
+        # Standard system text indicator telling readers how to render missing index details manually
         r4 = para.add_run("[ يُرجى فتح المستند في Word والضغط على Ctrl+A ثم F9 لتحديث الفهرس ]")
         r4.font.size = Pt(10)
         r4.font.color.rgb = RGBColor(0x99, 0x99, 0x99)
@@ -440,7 +436,7 @@ class DocxBuilder:
         r5._r.append(parse_xml(f'<w:fldChar {nsdecls("w")} w:fldCharType="end"/>'))
 
     def _add_intro_outro(self, text: str, is_intro: bool) -> None:
-        """إضافة المقدمة أو الخاتمة."""
+        """Appends basic isolated content sections for intros or outros."""
         s = self.settings
         title = "المقدمة" if is_intro else "الخاتمة"
 
@@ -452,7 +448,7 @@ class DocxBuilder:
         run.font.color.rgb = RGBColor(0x1A, 0x23, 0x7E)
         self._apply_rtl_to_run(run)
 
-        # تقسيم النص إلى فقرات وإضافتها
+        # Parse character block lines into formatted layout segments
         paragraphs = re.split(r"\n\s*\n", text.strip())
         for para_text in paragraphs:
             unified = " ".join(para_text.split())
@@ -462,10 +458,10 @@ class DocxBuilder:
         self.doc.add_page_break()
 
     def _add_lesson(self, lesson: Lesson, index: int) -> None:
-        """إضافة درس واحد: عنوان + فقرات + فاصل صفحة."""
+        """Appends an individual distinct structural text segment component block."""
         s = self.settings
 
-        # عنوان الدرس (Heading 1)
+        # Render heading text segment label (Heading 1 standard)
         heading = self.doc.add_heading(level=1)
         self._apply_rtl_to_paragraph(heading)
         run = heading.add_run(lesson.title)
@@ -474,92 +470,84 @@ class DocxBuilder:
         run.font.color.rgb = RGBColor(0x1A, 0x23, 0x7E)
         self._apply_rtl_to_run(run)
 
-        # فقرات الدرس
+        # Iterate individual text layout segments
         for para_text in lesson.paragraphs:
             self._add_formatted_paragraph(para_text)
 
-        # فاصل صفحة (إلا إذا كان آخر درس)
-        # سيتم إضافة فاصل صفحة بعد كل درس
-
-        # نضيف فاصل صفحة دائمًا، وسيتم حذف الفاصل الأخير لاحقًا
+        # Add section breaks to cleanly split document bodies
         self.doc.add_page_break()
 
     def _add_formatted_paragraph(self, text: str) -> None:
-        """إضافة فقرة منسقة حسب إعدادات المستخدم.
+        """Creates an aligned text block conforming strictly to styling attributes.
 
         Args:
-            text: نص الفقرة.
+            text: Pure content character string to be appended.
         """
         s = self.settings
         para = self.doc.add_paragraph()
         self._apply_rtl_to_paragraph(para)
 
-        # المحاذاة
+        # Alignment adjustments based on bi-directional setup
         if self._is_rtl:
             para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
         else:
             para.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
-        # المسافة بعد الفقرة
+        # Bottom trailing paragraph margins
         para.paragraph_format.space_after = Cm(s.paragraph_spacing_after_cm)
 
-        # تباعد الأسطر
+        # Height lines spacing scaling metrics
         para.paragraph_format.line_spacing = s.line_spacing
 
-        # إزاحة السطر الأول
+        # Indentation offset rules for initial sentence strings
         if s.first_line_indent_cm > 0:
             para.paragraph_format.first_line_indent = Cm(s.first_line_indent_cm)
 
-        # إضافة النص
+        # Commit character strings safely
         run = para.add_run(text)
         run.font.size = Pt(s.font_size)
         run.font.name = s.font_name
         self._apply_rtl_to_run(run)
 
     # ══════════════════════════════════════════════
-    #  الإنهاء والتنظيف
+    #  Cleanups & Normalization Procedures
     # ══════════════════════════════════════════════
 
     def _finalize_document(self) -> None:
-        """التنظيف النهائي للمستند قبل الحفظ.
-
-        - إزالة فاصل الصفحة الأخير إذا وُجد.
-        - ضبط الأنماط الافتراضية.
-        """
-        # إزالة فاصل الصفحة الأخير
+        """Performs optimization and styling updates before finalizing execution files."""
+        # Strip structural trailing blank breaks
         body = self.doc.element.body
         paragraphs = body.findall(qn("w:p"))
         if paragraphs:
             last_para = paragraphs[-1]
-            # البحث عن فاصل صفحة في الفقرة الأخيرة
             for run_elem in last_para.findall(qn("w:r")):
                 for br in run_elem.findall(qn("w:br")):
                     br_type = br.get(qn("w:type"))
                     if br_type == "page" or br_type is None:
                         run_elem.remove(br)
 
-        # تحديث الأنماط الافتراضية للمستند
+        # Apply fallback system baseline default styles
         self._update_default_styles()
 
     def _update_default_styles(self) -> None:
-        """تحديث الأنماط الافتراضية لتتوافق مع إعدادات المستخدم."""
+        """Updates standard underlying typography attributes based on runtime user targets."""
         s = self.settings
 
-        # نمط Normal
+        # Configure Normal paragraph baseline profiles
         try:
             normal_style = self.doc.styles["Normal"]
             normal_style.font.name = s.font_name
             normal_style.font.size = Pt(s.font_size)
             normal_style.paragraph_format.line_spacing = s.line_spacing
 
-            # تعيين اتجاه RTL للنمط الافتراضي
+            # Inject target properties for right-to-left layout maps
             rPr = normal_style.element.get_or_add_rPr()
             rtl_elem = rPr.find(qn("w:rtl"))
             if rtl_elem is None:
                 rtl_elem = parse_xml(f'<w:rtl {nsdecls("w")} w:val="1"/>')
                 rPr.append(rtl_elem)
 
-            # تعيين خط Complex Script للعربية
+            # Assign complex character script markers for Arabic text layout engine maps
             cs_elem = rPr.find(qn("w:cs"))
             if cs_elem is None:
                 cs_elem = parse_xml(
@@ -575,9 +563,9 @@ class DocxBuilder:
             rFonts.set(qn("w:ascii"), s.font_name)
             rFonts.set(qn("w:hAnsi"), s.font_name)
         except Exception as e:
-            logger.warning("تعذّر تحديث الأنماط الافتراضية: %s", e)
+            logger.warning("Could not adjust structural baseline profiles: %s", e)
 
-        # نمط Heading 1
+        # Configure Heading 1 typography properties
         try:
             h1_style = self.doc.styles["Heading 1"]
             h1_style.font.name = s.heading_font_name
@@ -598,14 +586,14 @@ class DocxBuilder:
             h1_rFonts.set(qn("w:ascii"), s.heading_font_name)
             h1_rFonts.set(qn("w:hAnsi"), s.heading_font_name)
         except Exception as e:
-            logger.warning("تعذّر تحديث نمط العنوان: %s", e)
+            logger.warning("Could not optimize custom section header layouts: %s", e)
 
     # ══════════════════════════════════════════════
-    #  مساعدات RTL
+    #  Bi-directional Language Alignment Handlers
     # ══════════════════════════════════════════════
 
     def _apply_rtl_to_paragraph(self, paragraph) -> None:
-        """تفعيل اتجاه RTL للفقرة."""
+        """Enforces a right-to-left directional state tracking matrix on a paragraph element."""
         if not self._is_rtl:
             return
         pPr = paragraph._p.get_or_add_pPr()
@@ -614,7 +602,7 @@ class DocxBuilder:
             pPr.append(parse_xml(f'<w:bidi {nsdecls("w")} w:val="1"/>'))
 
     def _apply_rtl_to_run(self, run) -> None:
-        """تفعيل اتجاه RTL للنص المُشغّل."""
+        """Enforces a right-to-left directional state tracking matrix on a run text sequence."""
         if not self._is_rtl:
             return
         rPr = run._r.get_or_add_rPr()

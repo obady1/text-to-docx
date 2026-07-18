@@ -1,4 +1,4 @@
-"""معالجة وتنظيف النصوص قبل إضافتها إلى المستند."""
+"""Text sanitization, normalization, and semantic paragraph chunking utilities."""
 
 import re
 from typing import Optional
@@ -10,79 +10,78 @@ logger = get_logger(__name__)
 
 
 class TextProcessor:
-    """مسؤول عن تنظيف النصوص وتقسيمها إلى فقرات."""
+    """Sanitizes text components and segments character blocks into separate paragraphs."""
 
-    # نمط الأسطر الفارغة المتكررة (ثلاثة أسطر فارغة أو أكثر → سطران فارغان)
+    # Matching criteria targeting redundant blank lines (compress 3+ line breaks down to 2)
     MULTIPLE_BLANK_LINES = re.compile(r"\n{3,}")
 
     def __init__(self, first_line_indent_cm: float = 0.0) -> None:
         self._first_line_indent_cm = first_line_indent_cm
 
     # ──────────────────────────────────────────────
-    # التنظيف الأساسي
+    # Core Text Sanitization
     # ──────────────────────────────────────────────
 
     def clean_text(self, text: str) -> str:
-        """تنظيف النص من المشاكل الشائعة.
+        """Sanitizes raw character sequences to remove systemic whitespace problems.
 
-        - إزالة الأسطر الفارغة المتكررة
-        - إزالة المسافات الزائدة في بداية ونهاية كل سطر
-        - توحيد فواصل الأسطر
+        - Compresses redundant consecutive line gaps
+        - Normalizes trailing empty character bounds on a per-line basis
+        - Standardizes platform-specific line break sequences
 
         Args:
-            text: النص الخام.
+            text: Raw input character text string.
 
         Returns:
-            النص المنظف.
+            The normalized text string.
         """
         if not text:
             return ""
 
-        # إزالة BOM إذا وُجد
+        # Remove byte order marks (BOM) if discovered
         if text.startswith("\ufeff"):
             text = text[1:]
 
-        # تقسيم إلى أسطر وتنظيف كل سطر
+        # Split text into lines and trim padding elements from individual strings
         lines = text.split("\n")
         cleaned_lines = [line.strip() for line in lines]
 
-        # إعادة التجميع
+        # Re-assemble text content
         text = "\n".join(cleaned_lines)
 
-        # إزالة الأسطر الفارغة المتكررة (تبقى أسطر فارغة واحدة كحد أقصى بين الفقرات)
+        # Enforce maximum single empty line spacing breaks between distinct blocks
         text = self.MULTIPLE_BLANK_LINES.sub("\n\n", text)
 
-        # إزالة الأسطر الفارغة في البداية والنهاية
+        # Strip bounding edge properties from entire block segment values
         text = text.strip()
 
         return text
 
     # ──────────────────────────────────────────────
-    # تقسيم الفقرات
+    # Semantic Paragraph Chunking
     # ──────────────────────────────────────────────
 
     def split_into_paragraphs(self, text: str) -> list[str]:
-        """تقسيم النص إلى فقرات منفصلة.
+        """Segments text bodies into separate logical paragraph elements.
 
-        فقرة = سطر أو أكثر من النص المتصل، مفصولة عن غيرها
-        بسطر فارغ واحد على الأقل.
+        A paragraph is defined as consecutive lines of text bound together, isolated
+        from surrounding text segments by at least one explicit empty line.
 
         Args:
-            text: النص المنظف.
+            text: Trimmed, sanitized text content.
 
         Returns:
-            قائمة الفقرات (كل عنصر فقرة كاملة).
+            A list where individual entries represent standalone paragraph strings.
         """
         if not text:
             return []
 
-        # تقسيم على سطر فارغ واحد أو أكثر
+        # Partition data segments across structural blank line delimiters
         raw_paragraphs = re.split(r"\n\s*\n", text)
 
-        # توحيد أسطر الفقرة الواحدة وتنظيفها
+        # Uniformly bind internal multi-line fragments into single continuous strings
         paragraphs = []
         for para in raw_paragraphs:
-            # توحيد أسطر الفقرة بمسافة واحدة
             unified = " ".join(para.split())
             if unified.strip():
                 paragraphs.append(unified.strip())
@@ -90,17 +89,17 @@ class TextProcessor:
         return paragraphs
 
     # ──────────────────────────────────────────────
-    # معالجة الدرس الكامل
+    # Lesson Transformation Workflows
     # ──────────────────────────────────────────────
 
     def process_lesson(self, lesson: Lesson) -> Lesson:
-        """معالجة درس كامل: تنظيف النص وتقسيمه إلى فقرات.
+        """Applies sanitization and structural parsing rules directly to an individual Lesson target.
 
         Args:
-            lesson: كائن الدرس الخام.
+            lesson: Unprocessed raw Lesson structure.
 
         Returns:
-            كائن الدرس بعد المعالجة (نفس الكائن مُعدَّل).
+            The same Lesson object updated with parsed content.
         """
         try:
             with open(lesson.file_path, "r", encoding="utf-8", errors="replace") as f:
@@ -112,20 +111,20 @@ class TextProcessor:
         lesson.paragraphs = self.split_into_paragraphs(cleaned)
 
         logger.debug(
-            "درس '%s': %d فقرة",
+            "Processed lesson block '%s': Identified %d distinct paragraphs.",
             lesson.title,
             len(lesson.paragraphs),
         )
         return lesson
 
     def process_lessons(self, lessons: list[Lesson]) -> list[Lesson]:
-        """معالجة مجموعة من الدروس.
+        """Processes a sequence of input text data blocks in batch mode.
 
         Args:
-            lessons: قائمة الدروس الخام.
+            lessons: Collection array of unrefined Lesson entities.
 
         Returns:
-            قائمة الدروس بعد المعالجة.
+            Updated sequence collection populated with normalized text segments.
         """
         processed = []
         for lesson in lessons:

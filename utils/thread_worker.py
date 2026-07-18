@@ -1,4 +1,4 @@
-"""خيط العمل المنفصل لعملية التحويل لمنع تجميد الواجهة."""
+"""Isolated worker thread manager to run conversions without freezing the main UI."""
 
 import threading
 import time
@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 
 @dataclass
 class WorkerResult:
-    """نتيجة عملية التحويل."""
+    """Data object encapsulating the conversion final output status."""
     success: bool = False
     output_path: str = ""
     error_message: str = ""
@@ -22,9 +22,9 @@ class WorkerResult:
 
 
 class ConversionWorker:
-    """خيط عمل يقوم بعملية التحويل في الخلفية.
+    """Background execution engine running long tasks concurrently from the main UI thread.
 
-    يتواصل مع الواجهة عبر دوال الاستدعاء (callbacks).
+    Communicates lifecycle changes back to the UI asynchronously via thread-safe callbacks.
     """
 
     def __init__(
@@ -34,13 +34,13 @@ class ConversionWorker:
         on_complete: Optional[Callable[[WorkerResult], None]] = None,
         on_log: Optional[Callable[[str], None]] = None,
     ) -> None:
-        """تهيئة خيط العمل.
+        """Initializes the background worker instance.
 
         Args:
-            target: الدالة الرئيسية للتنفيذ.
-            on_progress: دالة تُستدعى عند تحديث التقدم (حالي, إجمالي, اسم).
-            on_complete: دالة تُستدعى عند انتهاء العمل مع النتيجة.
-            on_log: دالة تُستدعى لإضافة رسالة للسجل.
+            target: The primary task function to be invoked inside the thread.
+            on_progress: Callback triggered when progress updates (current, total, filename).
+            on_complete: Callback triggered upon operational termination, receiving a WorkerResult.
+            on_log: Callback triggered to pipe internal execution tracking strings to the UI log view.
         """
         self._target = target
         self._on_progress = on_progress
@@ -53,23 +53,23 @@ class ConversionWorker:
 
     @property
     def is_running(self) -> bool:
-        """هل الخيط يعمل حاليًا؟"""
+        """Checks if the thread is currently executing."""
         return self._running
 
     @property
     def stop_check(self) -> Callable[[], bool]:
-        """دالة يمكن تمريرها للباني للتحقق من طلب الإيقاف."""
+        """Provides a check function callable by the execution target to detect cancellation requests."""
         return self._stop_event.is_set
 
     def start(self, *args, **kwargs) -> None:
-        """بدء خيط العمل.
+        """Spawns and activates the worker thread safely.
 
         Args:
-            *args: معاملات موضعية للدالة المستهدفة.
-            **kwargs: معاملات مسماة للدالة المستهدفة.
+            *args: Positional arguments passed to the target function.
+            **kwargs: Keyword arguments passed to the target function.
         """
         if self._running:
-            logger.warning("خيط العمل يعمل بالفعل")
+            logger.warning("Worker thread is already active and running.")
             return
 
         self._stop_event.clear()
@@ -80,7 +80,8 @@ class ConversionWorker:
             result = WorkerResult()
             try:
                 output = self._target(*args, **kwargs)
-                # إذا أرجعت الدالة مسار الملف
+                
+                # Check the target function's output format
                 if isinstance(output, str):
                     result.output_path = output
                     result.success = True
@@ -94,32 +95,33 @@ class ConversionWorker:
                     result.success = True
 
                 elapsed = (datetime.now() - start_time).total_seconds()
-                self._safe_log(f"⏱ انتهت العملية في {elapsed:.1f} ثانية")
+                self._safe_log(f"⏱ Operation finished in {elapsed:.1f} seconds.")
 
             except Exception as e:
                 result.success = False
                 result.error_message = str(e)
-                logger.error("خطأ في خيط العمل: %s", e, exc_info=True)
-                self._safe_log(f"❌ خطأ: {e}")
+                logger.error("Error occurred inside worker thread: %s", e, exc_info=True)
+                self._safe_log(f"❌ Error: {e}")
 
             finally:
                 self._running = False
                 if self._on_complete:
                     self._on_complete(result)
 
+        # Configure as a daemon thread so it terminates immediately if the app closes
         self._thread = threading.Thread(target=_run, daemon=True)
         self._thread.start()
-        logger.info("تم بدء خيط العمل")
+        logger.info("Worker thread spawned successfully.")
 
     def stop(self) -> None:
-        """طلب إيقاف العملية."""
+        """Sends a soft cancellation token signal to halt operations gracefully."""
         if self._running:
             self._stop_event.set()
-            self._safe_log("⏳ جارٍ إيقاف العملية...")
-            logger.info("تم طلب إيقاف خيط العمل")
+            self._safe_log("⏳ Stopping process gracefully...")
+            logger.info("Thread termination request received.")
 
     def _safe_log(self, message: str) -> None:
-        """إرسال رسالة للسجل بأمان."""
+        """Safely dispatches text string to log tracking callback ignoring errors."""
         if self._on_log:
             try:
                 self._on_log(message)
@@ -127,7 +129,7 @@ class ConversionWorker:
                 pass
 
     def _safe_progress(self, current: int, total: int, name: str) -> None:
-        """تحديث التقدم بأمان."""
+        """Safely dispatches standard metric progress updates tracking step progression."""
         if self._on_progress:
             try:
                 self._on_progress(current, total, name)

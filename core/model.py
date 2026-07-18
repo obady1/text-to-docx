@@ -1,4 +1,4 @@
-"""النماذج والهياكل الأساسية المستخدمة في المشروع."""
+"""Core data structural schemas and configuration models."""
 
 from dataclasses import dataclass, field
 from enum import Enum
@@ -6,7 +6,7 @@ from typing import Optional
 
 
 class PageSize(str, Enum):
-    """أحجام الورق المدعومة."""
+    """Supported paper dimensions configuration constraints."""
     A4 = "A4"
     A5 = "A5"
     LETTER = "Letter"
@@ -15,31 +15,31 @@ class PageSize(str, Enum):
 
 
 class TextDirection(str, Enum):
-    """اتجاه النص."""
+    """Text directional orientation states."""
     RTL = "RTL"
     LTR = "LTR"
 
 
 @dataclass
 class BookSettings:
-    """إعدادات الكتاب والمستند بالكامل.
+    """Document generation metadata rules and properties.
 
-    تحتوي جميع القيم القابلة للتعديل من قبل المستخدم
-    مع قيم افتراضية مناسبة للكتب العربية.
+    Maintains all variable runtime parameters configured by the user
+    with optimized presets suited for typical Arabic textual outputs.
     """
-    # ── المعلومات الأساسية ──
+    # ── Basic Information ──
     book_title: str = ""
     author_name: str = ""
     header_text: str = ""
     footer_text: str = ""
 
-    # ── الخط ──
+    # ── Typography ──
     font_name: str = "Simplified Arabic"
     font_size: int = 14
     heading_font_size: int = 26
     heading_font_name: str = "Simplified Arabic"
 
-    # ── الصفحة ──
+    # ── Page Setup ──
     page_size: str = "A4"
     margin_top_cm: float = 2.0
     margin_bottom_cm: float = 2.0
@@ -47,12 +47,12 @@ class BookSettings:
     margin_right_cm: float = 2.5
     text_direction: str = "RTL"
 
-    # ── المسافات ──
+    # ── Spacing ──
     line_spacing: float = 1.5
     paragraph_spacing_after_cm: float = 0.3
     first_line_indent_cm: float = 0.0
 
-    # ── المكونات الاختيارية ──
+    # ── Structural Options ──
     add_cover: bool = True
     add_copyright: bool = True
     add_toc: bool = True
@@ -60,24 +60,24 @@ class BookSettings:
     add_header: bool = True
     add_footer: bool = True
 
-    # ── النصوص الإضافية ──
+    # ── Extended Boilerplate Fields ──
     copyright_text: str = "جميع الحقوق محفوظة © {year} {author}"
     intro_text: str = ""
     conclusion_text: str = ""
     cover_image_path: str = ""
 
-    # ── واجهة المستخدم ──
+    # ── User Interface Controls ──
     language: str = "ar"
     theme: str = "dark"
 
-    # ── المسارات الأخيرة ──
+    # ── Session Cache History ──
     last_input_folder: str = ""
     last_output_folder: str = ""
 
 
 @dataclass
 class Lesson:
-    """يمثل درسًا واحدًا مستخلصًا من ملف TXT."""
+    """Represents a clean textbook text slice derived from individual source files."""
     title: str
     paragraphs: list[str] = field(default_factory=list)
     file_path: str = ""
@@ -86,7 +86,7 @@ class Lesson:
 
 @dataclass
 class ConversionStats:
-    """إحصائيات عملية التحويل."""
+    """Operational execution tracking analytics data metrics."""
     total_files: int = 0
     processed_files: int = 0
     failed_files: int = 0
@@ -96,7 +96,7 @@ class ConversionStats:
     cancelled: bool = False
 
 
-# قواميس أحجام الورق بالسنتيمتر
+# Metric parameters mapping standard sizes directly to centimeters
 PAGE_DIMENSIONS_CM: dict[str, tuple[float, float]] = {
     "A4": (21.0, 29.7),
     "A5": (14.8, 21.0),
@@ -105,7 +105,7 @@ PAGE_DIMENSIONS_CM: dict[str, tuple[float, float]] = {
     "Legal": (21.59, 35.56),
 }
 
-# الخطوط العربية المقترحة
+# Curated selections for standard Arabic typography rendering
 ARABIC_FONTS = [
     "Simplified Arabic",
     "Traditional Arabic",
@@ -116,7 +116,7 @@ ARABIC_FONTS = [
     "Times New Roman",
 ]
 
-# الخطوط اللاتينية المقترحة
+# Curated selections for standard Latin typography rendering
 LATIN_FONTS = [
     "Times New Roman",
     "Garamond",

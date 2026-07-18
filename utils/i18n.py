@@ -1,17 +1,18 @@
-"""نظام تعدد اللغات (Arabic / English)."""
+"""Internationalization system (Arabic / English)."""
 
 from typing import Optional
 
 
 class I18n:
-    """مدير الترجمة البسيط.
+    """A simple translation manager.
 
-    يدعم العربية والإنجليزية مع إمكانية إضافة لغات أخرى.
+    Supports Arabic and English with the flexibility to add more languages.
     """
 
+    # Dictionary containing all translation keys and their corresponding localized text
     _translations: dict[str, dict[str, str]] = {
         "ar": {
-            # ── عام ──
+            # ── General ──
             "app_title": "محوّل النصوص إلى Word",
             "start": "بدء التحويل",
             "stop": "إيقاف",
@@ -24,7 +25,7 @@ class I18n:
             "browse": "استعراض...",
             "exit": "خروج",
 
-            # ── الواجهة الرئيسية ──
+            # ── Main UI ──
             "input_folder": "مجلد ملفات TXT:",
             "output_folder": "مجلد الحفظ:",
             "output_filename": "اسم الملف:",
@@ -46,7 +47,7 @@ class I18n:
             "elapsed": "الوقت المنقضي: {time}",
             "file_saved": "تم حفظ الملف في: {path}",
 
-            # ── القائمة ──
+            # ── Menu ──
             "menu_file": "ملف",
             "menu_settings": "إعدادات",
             "menu_help": "مساعدة",
@@ -57,7 +58,7 @@ class I18n:
             "menu_dark": "داكن",
             "menu_light": "فاتح",
 
-            # ── الإعدادات ──
+            # ── Settings ──
             "settings_title": "إعدادات المستند",
             "tab_general": "عام",
             "tab_page": "الصفحة",
@@ -92,7 +93,7 @@ class I18n:
             "settings_saved": "تم حفظ الإعدادات بنجاح.",
             "settings_reset": "تم إعادة التعيين إلى القيم الافتراضية.",
 
-            # ── حول ──
+            # ── About ──
             "about_title": "حول البرنامج",
             "about_version": "الإصدار 1.0.0",
             "about_desc": (
@@ -103,7 +104,7 @@ class I18n:
             ),
             "about_dev": "التطوير بواسطة: فريق التطوير",
 
-            # ── المعاينة ──
+            # ── Preview ──
             "preview_title": "معاينة الإعدادات",
             "preview_summary": "ملخص الإعدادات الحالية قبل التصدير:",
         },
@@ -207,30 +208,32 @@ class I18n:
     }
 
     def __init__(self, language: str = "ar") -> None:
+        """Initializes the i18n manager with a default language."""
         self._language = language
 
     @property
     def language(self) -> str:
-        """اللغة الحالية."""
+        """Gets the currently selected language."""
         return self._language
 
     @language.setter
     def language(self, value: str) -> None:
-        """تغيير اللغة."""
+        """Sets/changes the current language if it exists in translations."""
         if value in self._translations:
             self._language = value
 
     def t(self, key: str, **kwargs) -> str:
-        """ترجمة مفتاح نصي مع استبدال المتغيرات.
+        """Translates a text key with optional variable replacement.
 
         Args:
-            key: مفتاح الترجمة.
-            **kwargs: متغيرات الاستبدال (مثال: count=5).
+            key: The translation key.
+            **kwargs: Dynamic variables for substitution (e.g., count=5).
 
         Returns:
-            النص المترجم أو المفتاح نفسه إذا لم يُوجد.
+            The translated string, or the key itself if not found.
         """
         lang_dict = self._translations.get(self._language, {})
+        # Fallback to Arabic if the key is missing in the chosen language
         text = lang_dict.get(key, self._translations.get("ar", {}).get(key, key))
         if kwargs:
             try:
@@ -240,16 +243,16 @@ class I18n:
         return text
 
     def available_languages(self) -> list[str]:
-        """قائمة اللغات المتاحة."""
+        """Returns a list of all available language codes."""
         return list(self._translations.keys())
 
 
-# نسخة عامة واحدة
+# Singleton instance container
 _i18n_instance: Optional[I18n] = None
 
 
 def get_i18n(language: str = "ar") -> I18n:
-    """الحصول على نسخة واحدة من مدير الترجمة."""
+    """Retrieves or creates the single shared instance of the I18n manager."""
     global _i18n_instance
     if _i18n_instance is None:
         _i18n_instance = I18n(language)

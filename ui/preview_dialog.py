@@ -1,4 +1,4 @@
-"""نافذة معاينة الإعدادات قبل التصدير."""
+"""Preview window to review document configurations prior to execution export."""
 
 import customtkinter as ctk
 
@@ -9,7 +9,7 @@ _i18n = get_i18n()
 
 
 class PreviewDialog(ctk.CTkToplevel):
-    """نافذة تعرض ملخصًا لجميع الإعدادات قبل بدء التحويل."""
+    """Dialogue panel detailing runtime settings before pipeline initialization."""
 
     def __init__(self, parent, settings: BookSettings, file_count: int = 0, **kwargs) -> None:
         super().__init__(parent, **kwargs)
@@ -24,17 +24,17 @@ class PreviewDialog(ctk.CTkToplevel):
         self._file_count = file_count
         self._build_ui()
 
-        # توسيط
+        # Center dialogue screen on top of parent frame properties
         self.update_idletasks()
         x = parent.winfo_x() + (parent.winfo_width() - self.winfo_width()) // 2
         y = parent.winfo_y() + (parent.winfo_height() - self.winfo_height()) // 2
         self.geometry(f"+{x}+{y}")
 
     def _build_ui(self) -> None:
-        """بناء واجهة المعاينة."""
+        """Constructs preview visual node layouts within the module view."""
         s = self._settings
 
-        # العنوان
+        # Component section header
         header = ctk.CTkLabel(
             self,
             text=_i18n.t("preview_summary"),
@@ -43,25 +43,25 @@ class PreviewDialog(ctk.CTkToplevel):
         )
         header.pack(fill="x", padx=20, pady=(20, 10))
 
-        # إطار التمرير
+        # Scrollable container element
         scroll = ctk.CTkScrollableFrame(self, fg_color="transparent")
         scroll.pack(fill="both", expand=True, padx=20, pady=(0, 10))
 
-        # بناء أقسام المعاينة
-        self._add_section(scroll, "📋 المعلومات الأساسية", [
+        # Populate summary segments data
+        self._add_section(scroll, "📋 Core Information", [
             (_i18n.t("book_name"), s.book_title or "—"),
             (_i18n.t("author_name"), s.author_name or "—"),
-            ("عدد الملفات", str(self._file_count)),
+            ("Total File Count", str(self._file_count)),
         ])
 
-        self._add_section(scroll, "🔤 الخط", [
+        self._add_section(scroll, "🔤 Typography & Fonts", [
             (_i18n.t("font"), s.font_name),
             (_i18n.t("font_size"), f"{s.font_size} pt"),
             (_i18n.t("heading_font"), s.heading_font_name),
             (_i18n.t("heading_size"), f"{s.heading_font_size} pt"),
         ])
 
-        self._add_section(scroll, "📄 الصفحة", [
+        self._add_section(scroll, "📄 Page Geometry Properties", [
             (_i18n.t("page_size"), s.page_size),
             (_i18n.t("margin_top"), f"{s.margin_top_cm} cm"),
             (_i18n.t("margin_bottom"), f"{s.margin_bottom_cm} cm"),
@@ -71,31 +71,32 @@ class PreviewDialog(ctk.CTkToplevel):
             (_i18n.t("line_spacing"), f"{s.line_spacing}"),
         ])
 
+        # Track structural parameters state flags configurations safely
         components = []
         if s.add_cover:
-            components.append("غلاف")
+            components.append("Cover Page")
         if s.add_copyright:
-            components.append("حقوق نشر")
+            components.append("Copyrights Statement")
         if s.add_toc:
-            components.append("فهرس")
+            components.append("Table of Contents")
         if s.add_page_numbers:
-            components.append("ترقيم صفحات")
+            components.append("Page Numbering")
         if s.add_header:
-            components.append(f"ترويسة: {s.header_text or '—'}")
+            components.append(f"Header: {s.header_text or '—'}")
         if s.add_footer:
-            components.append(f"تذييل: {s.footer_text or '—'}")
+            components.append(f"Footer: {s.footer_text or '—'}")
         if s.intro_text.strip():
-            components.append("مقدمة")
+            components.append("Introduction Text")
         if s.conclusion_text.strip():
-            components.append("خاتمة")
+            components.append("Conclusion Notes")
 
         self._add_section(
             scroll,
-            "🧩 المكونات",
-            [("المفعّلة", "، ".join(components) if components else "لا يوجد")],
+            "🧩 Structural Components",
+            [("Active Modules", ", ".join(components) if components else "None Selected")],
         )
 
-        # زر الإغلاق
+        # Bottom dismiss dialog command triggers button
         close_btn = ctk.CTkButton(
             self,
             text=_i18n.t("close"),
@@ -107,8 +108,8 @@ class PreviewDialog(ctk.CTkToplevel):
     def _add_section(
         self, parent, title: str, items: list[tuple[str, str]]
     ) -> None:
-        """إضافة قسم للمعاينة."""
-        # عنوان القسم
+        """Appends individual distinct section metadata block layouts within preview fields."""
+        # Categorized block section headers
         sec_label = ctk.CTkLabel(
             parent,
             text=title,
@@ -118,7 +119,7 @@ class PreviewDialog(ctk.CTkToplevel):
         )
         sec_label.pack(fill="x", pady=(12, 4))
 
-        # عناصر القسم
+        # Map metadata data pairs sequentially inside explicit layout frames
         for key, value in items:
             row = ctk.CTkFrame(parent, fg_color="transparent")
             row.pack(fill="x", padx=10, pady=1)
@@ -141,6 +142,6 @@ class PreviewDialog(ctk.CTkToplevel):
             )
             val_label.pack(side="right", fill="x", expand=True)
 
-        # فاصل
+        # Section separator rule
         sep = ctk.CTkFrame(parent, height=1, fg_color="gray30")
         sep.pack(fill="x", padx=5, pady=4)

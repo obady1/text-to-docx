@@ -1,4 +1,4 @@
-"""نافذة الإعدادات التفصيلية."""
+"""Detailed configuration control dashboard panel detailing user system setup flags."""
 
 import customtkinter as ctk
 
@@ -9,7 +9,7 @@ _i18n = get_i18n()
 
 
 class SettingsDialog(ctk.CTkToplevel):
-    """نافذة إعدادات شاملة مع تبويبات."""
+    """Comprehensive multi-tabbed layout settings dialogue frame window."""
 
     def __init__(
         self, parent, settings: BookSettings, on_save=None, **kwargs
@@ -31,19 +31,19 @@ class SettingsDialog(ctk.CTkToplevel):
         self._center_on_parent(parent)
 
     def _center_on_parent(self, parent) -> None:
-        """توسيط النافذة بالنسبة للأب."""
+        """Centers widget position geometry parameters targeting root frames safely."""
         self.update_idletasks()
         x = parent.winfo_x() + (parent.winfo_width() - self.winfo_width()) // 2
         y = parent.winfo_y() + (parent.winfo_height() - self.winfo_height()) // 2
         self.geometry(f"+{x}+{y}")
 
     # ──────────────────────────────────────────────
-    # بناء الواجهة
+    # UI Layout Construction Details
     # ──────────────────────────────────────────────
 
     def _build_ui(self) -> None:
-        """بناء عناصر الواجهة مع التبويبات."""
-        # التبويبات
+        """Draws visual nodes structure trees along system tab pages views."""
+        # Tab view wrapper element container
         self._tabview = ctk.CTkTabview(self)
         self._tabview.pack(fill="both", expand=True, padx=15, pady=(15, 5))
 
@@ -57,7 +57,7 @@ class SettingsDialog(ctk.CTkToplevel):
         self._build_components_tab(tab_components)
         self._build_advanced_tab(tab_advanced)
 
-        # أزرار الحفظ والإعادة
+        # Control panel execution operations buttons layout wrapper row
         btn_frame = ctk.CTkFrame(self, fg_color="transparent")
         btn_frame.pack(fill="x", padx=15, pady=10)
 
@@ -80,30 +80,30 @@ class SettingsDialog(ctk.CTkToplevel):
         save_btn.pack(side="right")
 
     def _build_general_tab(self, parent) -> None:
-        """تبويب الإعدادات العامة: الخطوط والأحجام."""
+        """Builds typography adjustments selectors fields: Fonts, Sizes, Orientations."""
         fonts = ARABIC_FONTS + LATIN_FONTS
 
-        # خط النص
+        # Text Body typography font definitions selector properties
         self._add_labeled_option(
             parent, _i18n.t("font"), "font_name", fonts, row=0
         )
 
-        # حجم الخط
+        # Text Body typography point font sizes inputs parameter
         self._add_labeled_entry(
             parent, _i18n.t("font_size"), "font_size", row=1
         )
 
-        # خط العناوين
+        # Heading elements typography font type selectors
         self._add_labeled_option(
             parent, _i18n.t("heading_font"), "heading_font_name", fonts, row=2
         )
 
-        # حجم العناوين
+        # Heading structural dimensions point text sizing values entries
         self._add_labeled_entry(
             parent, _i18n.t("heading_size"), "heading_font_size", row=3
         )
 
-        # اتجاه النص
+        # Reading workflow text direction orientation selector configs
         self._add_labeled_option(
             parent,
             _i18n.t("text_direction"),
@@ -113,14 +113,14 @@ class SettingsDialog(ctk.CTkToplevel):
         )
 
     def _build_page_tab(self, parent) -> None:
-        """تبويب إعدادات الصفحة: الحجم والهوامش."""
+        """Configures systemic paper size layout sheets parameters and margin spaces fields."""
         page_sizes = list(PAGE_DIMENSIONS_CM.keys())
 
         self._add_labeled_option(
             parent, _i18n.t("page_size"), "page_size", page_sizes, row=0
         )
 
-        # هوامش
+        # Document Margin spatial dimensions fields layout blocks wrapper
         margin_frame = ctk.CTkFrame(parent, fg_color="transparent")
         margin_frame.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(15, 5), padx=10)
 
@@ -136,23 +136,23 @@ class SettingsDialog(ctk.CTkToplevel):
         self._add_margin_field(margins_grid, _i18n.t("margin_left"), "margin_left_cm", 1, 0)
         self._add_margin_field(margins_grid, _i18n.t("margin_right"), "margin_right_cm", 1, 1)
 
-        # تباعد الأسطر
+        # Line spacing scale height configuration factors metrics parameters
         self._add_labeled_entry(
             parent, _i18n.t("line_spacing"), "line_spacing", row=2
         )
 
-        # مسافة بعد الفقرة
+        # Segment structural space separation heights metrics definitions
         self._add_labeled_entry(
             parent, _i18n.t("para_spacing"), "paragraph_spacing_after_cm", row=3
         )
 
-        # إزاحة السطر الأول
+        # First line indentation distance scales values metrics inputs controls
         self._add_labeled_entry(
             parent, _i18n.t("first_indent"), "first_line_indent_cm", row=4
         )
 
     def _build_components_tab(self, parent) -> None:
-        """تبويب المكونات الاختيارية."""
+        """Draws optional architectural structural composition switches sections blocks."""
         switches = [
             ("add_cover", _i18n.t("add_cover")),
             ("add_copyright", _i18n.t("add_copyright")),
@@ -167,7 +167,7 @@ class SettingsDialog(ctk.CTkToplevel):
             switch.grid(row=i, column=0, columnspan=2, sticky="w", padx=10, pady=4)
             self._widgets[key] = switch
 
-        # نصوص إضافية
+        # Dynamic template textual context string textboxes inputs fields
         self._add_labeled_textbox(
             parent, _i18n.t("header_text"), "header_text", row=len(switches)
         )
@@ -179,7 +179,7 @@ class SettingsDialog(ctk.CTkToplevel):
         )
 
     def _build_advanced_tab(self, parent) -> None:
-        """تبويب إعدادات متقدمة: مقدمة وخاتمة."""
+        """Deploys advanced macro metadata textual segment blocks content editors maps."""
         self._add_labeled_textbox(
             parent, _i18n.t("intro_text"), "intro_text", row=0, height=120
         )
@@ -188,13 +188,13 @@ class SettingsDialog(ctk.CTkToplevel):
         )
 
     # ──────────────────────────────────────────────
-    # أدوات بناء العناصر
+    # Layout Component Generator Toolkits Helpers
     # ──────────────────────────────────────────────
 
     def _add_labeled_option(
         self, parent, label: str, key: str, options: list, row: int
     ) -> None:
-        """إضافة تسمية + قائمة منسدلة."""
+        """Appends descriptive titles stacked alongside specialized OptionMenu select fields safely."""
         ctk.CTkLabel(parent, text=label, anchor="w").grid(
             row=row, column=0, sticky="w", padx=10, pady=6
         )
@@ -206,7 +206,7 @@ class SettingsDialog(ctk.CTkToplevel):
     def _add_labeled_entry(
         self, parent, label: str, key: str, row: int
     ) -> None:
-        """إضافة تسمية + حقل إدخال."""
+        """Appends standard label headings alongside single-line active text entry inputs elements."""
         ctk.CTkLabel(parent, text=label, anchor="w").grid(
             row=row, column=0, sticky="w", padx=10, pady=6
         )
@@ -218,7 +218,7 @@ class SettingsDialog(ctk.CTkToplevel):
     def _add_labeled_textbox(
         self, parent, label: str, key: str, row: int, height: int = 80
     ) -> None:
-        """إضافة تسمية + مربع نص متعدد الأسطر."""
+        """Appends field titles context stacked on top of multi-line large Textbox area nodes fields."""
         ctk.CTkLabel(parent, text=label, anchor="w").grid(
             row=row, column=0, sticky="nw", padx=10, pady=6
         )
@@ -230,7 +230,7 @@ class SettingsDialog(ctk.CTkToplevel):
     def _add_margin_field(
         self, parent, label: str, key: str, row: int, col: int
     ) -> None:
-        """إضافة حقل هامش في شبكة الهوامش."""
+        """Draws individual single margins metrics parameter field controls within grid alignments blocks."""
         frame = ctk.CTkFrame(parent, fg_color="transparent")
         frame.grid(row=row, column=col, padx=8, pady=4, sticky="ew")
         parent.grid_columnconfigure(col, weight=1)
@@ -241,11 +241,11 @@ class SettingsDialog(ctk.CTkToplevel):
         self._widgets[key] = entry
 
     # ──────────────────────────────────────────────
-    # تحميل وحفظ الإعدادات
+    # Data Population Synchronization Engines
     # ──────────────────────────────────────────────
 
     def _load_settings(self) -> None:
-        """ملء الحقول بقيم الإعدادات الحالية."""
+        """Loads and maps saved settings profiles to active UI input component elements fields."""
         s = self._settings
 
         for key, widget in self._widgets.items():
@@ -254,7 +254,6 @@ class SettingsDialog(ctk.CTkToplevel):
                 continue
 
             if isinstance(widget, ctk.CTkOptionMenu):
-                # البحث عن القيمة في الخيارات
                 options = widget.cget("values")
                 if value in options:
                     widget.set(value)
@@ -276,7 +275,7 @@ class SettingsDialog(ctk.CTkToplevel):
                 widget.insert("1.0", str(value))
 
     def _collect_settings(self) -> BookSettings:
-        """جمع القيم من الحقول وتحديث كائن الإعدادات."""
+        """Collects field value configurations data maps to generate structural tracking objects updates."""
         s = self._settings
 
         for key, widget in self._widgets.items():
@@ -298,19 +297,19 @@ class SettingsDialog(ctk.CTkToplevel):
                     setattr(s, key, widget.get("1.0", "end").strip())
             except (ValueError, AttributeError) as e:
                 from utils.logger import get_logger
-                get_logger(__name__).warning("خطأ في قراءة الحقل %s: %s", key, e)
+                get_logger(__name__).warning("Error capturing parameter field target metrics key: %s: %s", key, e)
 
         return s
 
     def _save(self) -> None:
-        """حفظ الإعدادات وإغلاق النافذة."""
+        """Triggers tracking variables changes flush savings routines updates and destroys dialogue modals."""
         self._settings = self._collect_settings()
         if self._on_save:
             self._on_save(self._settings)
         self.destroy()
 
     def _reset(self) -> None:
-        """إعادة تعيين جميع الحقول إلى القيم الافتراضية."""
+        """Resets configurations values variables entries parameters targeting baseline parameters profiles defaults."""
         defaults = BookSettings()
         self._settings = defaults
         self._load_settings()
